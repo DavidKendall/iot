@@ -1,0 +1,102 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+  <head>
+
+    <title>Sensor Cloud</title>
+
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+<!--
+    <link rel="stylesheet" href="images/VectorLover.css" type="text/css" />
+-->
+
+<script type="text/javascript" src="./js/smoothie.js"></script> 
+<script type="text/javascript" src="./js/jquery-1.6.2.js"></script> 
+<script type="text/javascript" src="./js/websocket.js"></script> 
+
+<style type="text/css">
+
+	.type {
+		font-size: 1.3em;
+		font-weight: bold;
+	}
+
+	h3 {
+		font-size: 1em;
+	}
+
+	.data {
+		text-align:center;
+		font-size: 1em;
+	}
+	
+	.footer {
+		font-size:0.8em;
+	}
+</style>
+
+
+</head>
+
+
+
+<body>
+  <!-- wrap starts here -->
+  <div id="wrap">
+
+    <!--header -->
+    <div id="header">			
+
+    </div>
+
+
+
+    <!-- content starts -->
+    <div id="content">
+
+      <div id="main">
+        <div id="chartarea_acc">
+          <table>
+            <tr>
+              <td colspan="1">
+                <div class="type">Sensor: Motion</div>
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                <h3>Accelerometer Data</h3>		
+                <div class="data">
+                  <canvas id="chart_acc" width="300" height="200"></canvas>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="1" class="footer">ID: SN01, Type: Motion Sensor</td>
+            </tr>
+          </table> 
+        </div>
+        <button onclick="WSN_CLIENT.linkLedCommand()">LINK</button>
+        <button onclick="WSN_CLIENT.connectLedCommand()">CONNECT</button>
+        <button onclick="WSN_CLIENT.sdLedCommand()">SD</button> <br/>
+        <button onclick="WSN_CLIENT.smoothCommand()">SMOOTH TOGGLE</button>
+        <button onclick="WSN_CLIENT.testMessageCommand()">TEST MESSAGE</button>
+      </div>
+		<!-- end of main -->
+     </div>
+	  
+
+    <div id="footer">
+
+      <p>
+        Sensor cloud from <a href="hesabu.net">hesabu.net</a>
+      </p>			
+
+    </div>
+
+    <!-- wrap ends here -->
+  </div>
+
+</body>
+</html>

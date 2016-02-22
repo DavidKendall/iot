@@ -1,0 +1,82 @@
+var activity_acc = 0;
+
+var acc_x = new TimeSeries();
+var acc_y = new TimeSeries();
+var acc_z = new TimeSeries();
+
+var data_acc_x = 0;
+var data_acc_y = 0;
+var data_acc_z = 0;
+
+var chart_acc;
+
+function showGraph(chart)
+{
+  if(chart == "acc") 
+  {
+    $('#chartarea_acc').slideDown();
+    document.getElementById("chart_acc").width = 300;
+    document.getElementById("chart_acc").height = 200;
+  } 
+}
+
+function showMain() {
+  showGraph("acc");
+}
+
+function createTimeline() 
+{
+  chart_acc = new SmoothieChart({strokeStyle: 'rgb(125, 0, 0)', fillStyle: 'rgb(60, 0, 0)', lineWidth: 1, maxValue:900, minValue:300, millisPerLine: 250, verticalSections: 6 });
+
+
+  chart_acc.addTimeSeries(acc_x, { strokeStyle: 'rgba(255, 0, 0, 1)', fillStyle: 'rgba(255, 0, 0, 0.1)', lineWidth: 3 });
+  chart_acc.addTimeSeries(acc_y, { strokeStyle: 'rgba(0, 255, 0, 1)', fillStyle: 'rgba(0, 255, 0, 0.1)', lineWidth: 3 });
+  chart_acc.addTimeSeries(acc_z, { strokeStyle: 'rgba(0, 0, 255, 1)', fillStyle: 'rgba(0, 0, 255, 0.1)', lineWidth: 3 });
+
+
+  chart_acc.streamTo(document.getElementById("chart_acc"), 200);
+}
+
+function isActive_acc()
+{
+  if( activity_acc == 0 )
+  {
+    $("#chart_acc").fadeTo(10, 0.3);
+  }
+  activity_acc = 0;
+  setTimeout("isActive_acc()", 2000);
+}
+
+$(document).ready(function() {
+    showMain();
+    createTimeline();
+
+    websocket = new WebSocket('ws://hesabu.net:9000/ws/sensors/rw');
+
+    websocket.onopen = function () {
+    };
+
+    websocket.onmessage = function (evt) {
+    var json_sensor = jQuery.parseJSON(evt.data.toString());
+    date_ = new Date().getTime(); 
+    if(json_sensor.id == "wifly_acc") 
+    {
+        activity_acc = 1;
+        $("#chart_acc").fadeTo(100, 1);
+        data_acc_x = json_sensor.ax;
+        data_acc_y = json_sensor.ay;
+        data_acc_z = json_sensor.az;
+
+        acc_x.append(date_, data_acc_x);
+        acc_y.append(date_, data_acc_y);
+        acc_z.append(date_, data_acc_z);
+    }
+    else
+      manipulateDOM(json_sensor.id);
+    };
+
+    websocket.onclose = function () {}
+    isActive_acc();
+});
+
+

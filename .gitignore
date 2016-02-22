@@ -1,0 +1,7 @@
+**/Objects
+**/Listings
+**/*.uvguix.*
+**/*.cgdk2
+**/*~
+**/*.o
+

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<workspace>
+  <project>
+    <path>$WS_DIR$\projects\sensor-node\sensor-node.ewp</path>
+  </project>
+  <project>
+    <path>$WS_DIR$\projects\uart-uC-example\uart-uC-example.ewp</path>
+  </project>
+  <project>
+    <path>$WS_DIR$\projects\uartTest\uartTest.ewp</path>
+  </project>
+  <batchBuild/>
+</workspace>
+
+
