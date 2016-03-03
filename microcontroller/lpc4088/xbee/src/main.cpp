@@ -177,7 +177,7 @@ static void appTaskUARTWrite(void *pdata) {
   
   while ( true ) {
     OSSemPend(dataSem, 0, &osStatus);
-    sprintf(payload, "type:DATA,id:SN01,ax:%d,ay:%d,az:%d", nodeData.ax, nodeData.ay, nodeData.az);
+    sprintf(payload, "type:DATA,id:SN02,ax:%d,ay:%d,az:%d", nodeData.ax, nodeData.ay, nodeData.az);
     packetLen = xbee.xbeeMkPacketFromString(packet, payload);
     xbee.xbeeTxPacket(packet, packetLen);
   }

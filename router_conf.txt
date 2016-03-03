@@ -1,0 +1,46 @@
+ID            0
+SC            FFFF
+SC            3
+ZS            0
+NJ            FF
+NW            0
+JV            0
+JN            0
+OP            73A880A1A8DF6E35
+OI            6608
+CH            16
+NC            C
+
+SH            13A200
+SL            40BD24C7
+MY            70CA
+DH            0
+DL            0
+NI 
+NH            1E
+BH            0
+AR            FF
+DD            30000
+NT            3C
+NO            0
+NP            54
+CR            3
+
+SE            E8
+DE            E8
+CI            11
+
+PL            4
+PM            1
+PP            3
+
+CT            64
+GT            3E8
+CC            2B
+
+SM            0
+SN            1
+SO            0
+SP            20
+ST            1388
+PO            0
