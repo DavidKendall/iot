@@ -24,7 +24,7 @@ class WSProtocol(WebSocketClientProtocol):
       data = loads(payload.decode('utf8'))
       if data[u'type'] == u'COMMAND':
         sensorId = data[u'id']
-        print(repr(self.sp.protocol.nodes[sensorId]))
+        # print(repr(self.sp.protocol.nodes[sensorId]))
         longAddr = self.sp.protocol.nodes[sensorId]['longAddr']
         shortAddr = self.sp.protocol.nodes[sensorId]['shortAddr']
         if data[u'to'] == u'LED1_TOGGLE':
@@ -86,12 +86,12 @@ class SNodeProtocol(Protocol):
       startPos = self.buffer.find(START_BYTE)
       if startPos >= 0:
         self.buffer = self.buffer[startPos:]
-        print("Found start of frame : {:d}, {:d}".format(startPos, len(data)))
+        # print("Found start of frame : {:d}, {:d}".format(startPos, len(data)))
         self.state = GET_LEN
     elif self.state == GET_LEN:
       if len(self.buffer) >= 3:
         self.length = 256 * self.buffer[1] + self.buffer[2] + 3
-        print('Length : {:d}'.format(self.length))
+        # print('Length : {:d}'.format(self.length))
         if 0 <= self.length and self.length <= 72:
           self.state = GET_FRAME_TYPE
         else:
@@ -100,41 +100,41 @@ class SNodeProtocol(Protocol):
           self.state = GET_START
     elif self.state == GET_FRAME_TYPE:
       self.frameType = self.buffer[3]
-      print("%02x" % self.frameType)
+    #   print("%02x" % self.frameType)
       self.state = GET_REST_OF_FRAME
     elif self.state == GET_REST_OF_FRAME:
       if len(self.buffer) >= self.length:
         packet = self.buffer[:self.length]
-        print("Packet: "),
-        print(repr(packet))
+        # print("Packet: "),
+        # print(repr(packet))
         self.buffer = self.buffer[self.length:]
-        print("Buffer: "),
-        print(repr(self.buffer))
+        # print("Buffer: "),
+        # print(repr(self.buffer))
         if ((self.frameType == 0x90) or (self.frameType == 0x91)):
           startAppData = packet.find("type:DATA")
           if startAppData > 0:
-            print("Data starts at {:d}".format(startAppData))
+            # print("Data starts at {:d}".format(startAppData))
             try:
               sensorData = dict([s.split(':') for s in str(
                   packet[startAppData:self.length - 1]).split(',')])
               sensorId = sensorData.get('id')
               if sensorId != None:
                 msg = dumps(sensorData)
-                print(msg)
+                # print(msg)
                 self.ws.sendMessage(msg)
                 if sensorId not in self.nodes:
                   self.nodes[sensorId] = {'longAddr': packet[
                       4:12], 'shortAddr': packet[12:14]}
-                  print(repr(self.nodes))
+                #   print(repr(self.nodes))
             except ValueError:
               print("Dictionary error: " + repr(packet))
         else:
-          print("Bad packet: " + repr(packet))
+        #   print("Bad packet: " + repr(packet))
           self.badPacketCount += 1
         self.state = GET_START
     else:
       print("UNKNOWN STATE")
-    print("Bad Packet Count : {:d}\n".format(self.badPacketCount))
+    # print("Bad Packet Count : {:d}\n".format(self.badPacketCount))
 
 
 if __name__ == '__main__':

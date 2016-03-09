@@ -14,7 +14,10 @@ class Xb {
 		Xb(PinName tx, PinName rx);
     uint32_t xbeeMkPacketFromString(xbeeBuffer_t packet, char *s);
     void xbeeTxPacket(xbeeBuffer_t packet, uint32_t packetLen);
-    uint32_t xbeeRxNetstring(xbeeBuffer_t buffer);
+    bool xbeeReadable(void);
+	  uint32_t xbeeReadRaw(xbeeBuffer_t buffer);
+	  uint32_t xbeeReceivePacket(xbeeBuffer_t buffer);
+   	uint32_t xbeeRxNetstring(xbeeBuffer_t buffer);
     void xbeeTxTestFrame(uint8_t *buffer);
     uint8_t xbeeChecksum(xbeeBuffer_t packet, uint32_t pos);	
 	private:

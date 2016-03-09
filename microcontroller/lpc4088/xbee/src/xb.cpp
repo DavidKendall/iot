@@ -27,7 +27,7 @@ uint32_t Xb::xbeeMkPacketFromString(xbeeBuffer_t packet, char *s) {
   packet[1] = 0x00;
   packet[2] = packetLen - 4;
   packet[3] = 0x10;
-  packet[4] = 0x01;
+  packet[4] = 0x00;
   packet[5] = 0x00;
   packet[6] = 0x00;
   packet[7] = 0x00;
@@ -53,6 +53,44 @@ void Xb::xbeeTxPacket(xbeeBuffer_t packet, uint32_t packetLen) {
   for (i = 0; i < packetLen; i++) {
     serial.putc(packet[i]);
   }
+}
+
+bool Xb::xbeeReadable(void) {
+	return serial.readable() ? true : false;
+}
+
+uint32_t Xb::xbeeReadRaw(xbeeBuffer_t buffer) {
+	uint32_t i = 0;
+	
+	while (serial.readable() && (i < XBEE_BUFFER_SIZE)) {
+		buffer[i] = serial.getc();
+		i += 1;
+	}
+	return i;
+}
+
+uint32_t Xb::xbeeReceivePacket(xbeeBuffer_t buffer) {
+	uint32_t length = 0;
+	uint32_t i;
+	
+	while (true) {
+		buffer[0] = serial.getc();
+		if (buffer[0] == 0x7E) {
+			buffer[1] = serial.getc();
+			buffer[2] = serial.getc();
+			buffer[3] = serial.getc();
+			if ((buffer[3] == 0x90) || (buffer[3] == 0x91)) {
+			  length = buffer[1] * 256 + buffer[2];
+			  if (length <= 84) {
+			  	for (i = 4; i <= length + 1; i += 1) {
+				  	buffer[i] = serial.getc();
+				  }
+					break;
+			  }	
+			}				
+		}
+	}
+	return length + 4;
 }
 
 uint32_t Xb::xbeeRxNetstring(xbeeBuffer_t buffer) {

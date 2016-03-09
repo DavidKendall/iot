@@ -19,10 +19,11 @@
 */
 
 enum {
-  APP_TASK_LEDS_PRIO = 4,
+  APP_TASK_COMMAND_PRIO = 4,
+  APP_TASK_LEDS_PRIO,
   APP_TASK_UART_WRITE_PRIO,
   APP_TASK_MONITOR_PRIO,
-  APP_TASK_COMMAND_RX_PRIO,
+	APP_TASK_UART_READ_PRIO
 };
 
 /*
@@ -32,15 +33,17 @@ enum {
 */
 
 #define  APP_TASK_LEDS_STK_SIZE                 256
-#define  APP_TASK_COMMAND_RX_STK_SIZE           256
 #define  APP_TASK_UART_WRITE_STK_SIZE           256
+#define  APP_TASK_UART_READ_STK_SIZE            256
 #define  APP_TASK_MONITOR_STK_SIZE              256
+#define  APP_TASK_COMMAND_STK_SIZE              256
 
 
 static OS_STK appTaskLedsStk[APP_TASK_LEDS_STK_SIZE];
-static OS_STK appTaskCommandRxStk[APP_TASK_COMMAND_RX_STK_SIZE];
 static OS_STK appTaskUARTWriteStk[APP_TASK_UART_WRITE_STK_SIZE];
+static OS_STK appTaskUARTReadStk[APP_TASK_UART_READ_STK_SIZE];
 static OS_STK appTaskMonitorStk[APP_TASK_MONITOR_STK_SIZE];
+static OS_STK appTaskCommandStk[APP_TASK_COMMAND_STK_SIZE];
 
 /*
 *********************************************************************************************************
@@ -54,20 +57,22 @@ typedef struct {
   int32_t az;
 } nodeData_t;
 
-nodeData_t nodeData;
-OS_EVENT *dataSem;
+static nodeData_t nodeData;
+static OS_EVENT *dataSem;
+xbeeBuffer_t packetBuf;
+static OS_EVENT *packetSem;
 
-bool led1Flashing = true;
-bool led2Flashing = true;
-bool led3Flashing = true;
-bool led4Flashing = true;
-bool smoothed = false;
-char* testMessage[2] = {"Hello world",
-	                      "           " 
-                       };
-int32_t testMessageNum = 0;
-Display *d = Display::theDisplay();
-Xb xbee(P4_22, P4_23);
+static bool led1Flashing = true;
+static bool led2Flashing = true;
+static bool led3Flashing = true;
+static bool led4Flashing = true;
+static bool smoothed = false;
+static char* testMessage[2] = {"Hello world",
+	                             "           " 
+                              };
+static int32_t testMessageNum = 1;
+static Display *d = Display::theDisplay();
+static Xb xbee(P4_22, P4_23);
 
 
 /*
@@ -77,8 +82,9 @@ Xb xbee(P4_22, P4_23);
 */
 
 static void appTaskLeds(void *pdata);
-static void appTaskCommandRx(void *pdata);
+static void appTaskCommand(void *pdata);
 static void appTaskUARTWrite(void *pdata);
+static void appTaskUARTRead(void *pdata);
 static void appTaskMonitor(void *pdata);
 
 /*
@@ -108,15 +114,20 @@ int main() {
                (OS_STK *)&appTaskLedsStk[APP_TASK_LEDS_STK_SIZE - 1],
                APP_TASK_LEDS_PRIO);
 
-  OSTaskCreate(appTaskCommandRx,                               
+  OSTaskCreate(appTaskCommand,                               
                (void *)0,
-               (OS_STK *)&appTaskCommandRxStk[APP_TASK_COMMAND_RX_STK_SIZE - 1],
-               APP_TASK_COMMAND_RX_PRIO);
+               (OS_STK *)&appTaskCommandStk[APP_TASK_COMMAND_STK_SIZE - 1],
+               APP_TASK_COMMAND_PRIO);
 
   OSTaskCreate(appTaskUARTWrite,                               
                (void *)0,
                (OS_STK *)&appTaskUARTWriteStk[APP_TASK_UART_WRITE_STK_SIZE - 1],
                APP_TASK_UART_WRITE_PRIO);
+
+  OSTaskCreate(appTaskUARTRead,                               
+               (void *)0,
+               (OS_STK *)&appTaskUARTReadStk[APP_TASK_UART_READ_STK_SIZE - 1],
+               APP_TASK_UART_READ_PRIO);
 
   OSTaskCreate(appTaskMonitor,                               
                (void *)0,
@@ -124,6 +135,7 @@ int main() {
                APP_TASK_MONITOR_PRIO);
   
   dataSem = OSSemCreate(0);
+  packetSem = OSSemCreate(0);
   
   /* Start the OS */
   OSStart();                                                  
@@ -139,18 +151,11 @@ int main() {
 */
 
 static void appTaskLeds(void *pdata) {
-  /* Start the OS ticker 
-   * Must be done in the highest priority task
-   */
-	
   DigitalOut led1(LED1);
   DigitalOut led2(LED2);
   DigitalOut led3(LED3);
   DigitalOut led4(LED4);
 
-  /* Start the OS ticker -- must be done in the highest priority task */
-  SysTick_Config(SystemCoreClock / OS_TICKS_PER_SEC);
-  
   /* Task main loop */
   while (true) {
     if (led1Flashing) {
@@ -177,7 +182,7 @@ static void appTaskUARTWrite(void *pdata) {
   
   while ( true ) {
     OSSemPend(dataSem, 0, &osStatus);
-    sprintf(payload, "type:DATA,id:SN02,ax:%d,ay:%d,az:%d", nodeData.ax, nodeData.ay, nodeData.az);
+    sprintf(payload, "type:DATA,id:SN01,ax:%d,ay:%d,az:%d", nodeData.ax, nodeData.ay, nodeData.az);
     packetLen = xbee.xbeeMkPacketFromString(packet, payload);
     xbee.xbeeTxPacket(packet, packetLen);
   }
@@ -208,43 +213,55 @@ static void appTaskMonitor(void *pdata) {
   }
 }
 
-static void appTaskCommandRx(void *pdata) {
-  xbeeBuffer_t buffer;
+
+static void appTaskCommand(void *pdata) {
       
+  uint8_t osStatus;
+
+  /* Start the OS ticker -- must be done in the highest priority task */
+  SysTick_Config(SystemCoreClock / OS_TICKS_PER_SEC);
+  
   while ( true ) {
-    xbee.xbeeRxNetstring(buffer);
-    switch (buffer[0]) {
-      case '1': {
-        led1Flashing = !led1Flashing;
-        break;
-      }
-      case '2': {
-        led2Flashing = !led2Flashing;
-        break;
-      }
-      case '3': {
-        led3Flashing = !led3Flashing;
-        break;
-      }
-      case '4': {
-        led4Flashing = !led4Flashing;
-        break;
+      OSSemPend(packetSem, 0, &osStatus);
+      switch (packetBuf[17]) {
+        case '1': {
+          led1Flashing = !led1Flashing;
+          break;
+        }
+        case '2': {
+          led2Flashing = !led2Flashing;
+          break;
+        }
+        case '3': {
+          led3Flashing = !led3Flashing;
+          break;
+        }
+        case '4': {
+          led4Flashing = !led4Flashing;
+          break;
+			  }
+        case '5': {
+          smoothed = !smoothed;
+          break;
+			  }
+        case '6': {
+          testMessageNum = 1 - testMessageNum;
+				  d->setCursor(2,22);
+				  d->printf("%s", testMessage[testMessageNum]);
+          break;
+        }
+        default: {
+          break;
+        }
 			}
-      case '5': {
-        smoothed = !smoothed;
-        break;
-			}
-      case '6': {
-        testMessageNum = 1 - testMessageNum;
-				d->setCursor(2,22);
-				d->printf("%s", testMessage[testMessageNum]);
-        break;
-      }
-      default: {
-        break;
-      }
-    }
-  }      
+  }
+}      
+
+static void appTaskUARTRead(void *pdata) {
+	/* MUST be the lowest priority task */
+  while ( true ) {
+		xbee.xbeeReceivePacket(packetBuf);
+    (void)OSSemPost(packetSem); 
+    // xbee.xbeeReadRaw(packetBuf);		
+	}
 }
-
-
