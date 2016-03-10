@@ -62,9 +62,10 @@ class SNodeProtocol(Protocol):
           if startAppData > 0:
             print("Data starts at {:d}".format(startAppData))
             try:
-              sensorData = dict([s.split(':') for s in str(packet[startAppData:self.length-1]).split(',')])
+              sensorData = dict([s.split(':') for s in str(packet[startAppData:self.length]).split(',')])
               sensorId = sensorData.get('id')
               if sensorId != None:
+                print(sensorData)
                 msg = dumps(sensorData)
                 print(msg)
                 if sensorId not in self.nodes:

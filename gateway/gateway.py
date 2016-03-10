@@ -44,7 +44,11 @@ class WSProtocol(WebSocketClientProtocol):
           packet = xbeeMkPacketFromString('1:5,', longAddr, shortAddr)
           self.sp.protocol.transport.write(packet)
         elif data[u'to'] == u'TEST_MESSAGE':
-          packet = xbeeMkPacketFromString('1:6,', longAddr, shortAddr)
+          theMessage = data[u'param']
+          length = len(theMessage) + 1 
+          netstring = ('{}'.format(length) + ':6' + theMessage + ',').encode('ascii')
+          print('TEST_MESSAGE <' + netstring + '>')
+          packet = xbeeMkPacketFromString(netstring, longAddr, shortAddr)
           self.sp.protocol.transport.write(packet)
         else:
           pass
@@ -116,7 +120,7 @@ class SNodeProtocol(Protocol):
             # print("Data starts at {:d}".format(startAppData))
             try:
               sensorData = dict([s.split(':') for s in str(
-                  packet[startAppData:self.length - 1]).split(',')])
+                  packet[startAppData:self.length]).split(',')])
               sensorId = sensorData.get('id')
               if sensorId != None:
                 msg = dumps(sensorData)

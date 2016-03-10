@@ -47,6 +47,21 @@ uint32_t Xb::xbeeMkPacketFromString(xbeeBuffer_t packet, char *s) {
   return packetLen;
 }
 
+void Xb::xbeeNodeDiscovery() {
+	xbeeBuffer_t packet;
+	
+	packet[0] = 0x7E;
+	packet[1] = 0x00;
+	packet[2] = 0x04;
+	packet[3] = 0x08;
+	packet[4] = 0x01;
+	packet[5] = 0x4E;
+	packet[6] = 0x44;
+	packet[7] = 0x64;	
+	
+	xbeeTxPacket(packet, 8);
+}
+
 void Xb::xbeeTxPacket(xbeeBuffer_t packet, uint32_t packetLen) {
   uint32_t i;
   
@@ -93,28 +108,27 @@ uint32_t Xb::xbeeReceivePacket(xbeeBuffer_t buffer) {
 	return length + 4;
 }
 
-uint32_t Xb::xbeeRxNetstring(xbeeBuffer_t buffer) {
+uint32_t Xb::xbeeNetstring(xbeeBuffer_t buffer, char *str) {
   uint8_t b;
   uint32_t length = 0;
   uint32_t i;
+	uint32_t j;
   bool readingLength = true;
   
+	i = 15;
   while (readingLength) {
-    b = serial.getc();
+		b = buffer[i];
     if (b == ':') {
       readingLength = false;
     } else {
       length = length * 10 + (b - 48);
     }
+		i += 1;
   }
-  if (length > XBEE_BUFFER_SIZE) {
-    length = XBEE_BUFFER_SIZE;  // notice that we silently truncate data that is too big for the buffer
+  for (j = 0; j < length; j += 1, i += 1) {
+    str[j] = buffer[i];
   }
-  for (i = 0; i < length; i += 1) {
-    buffer[i] = serial.getc();
-  }
-  b = serial.getc(); // read the trailing comma on the netstring
-  return length;
+	return length;
 }
 
 

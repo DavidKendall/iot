@@ -1,5 +1,5 @@
 /*jslint browser: true*/
-/*global jQuery, SmoothieChart, TimeSeries, manipulateDOM, WebSocket, $*/
+/*global jQuery, SmoothieChart, TimeSeries, manipulateDOM, WebSocket, JustGage, $*/
 
 var WSN_CLIENT = (function() {
   'use strict';
@@ -13,17 +13,32 @@ var WSN_CLIENT = (function() {
   var dataAccZ = 0;
   var websocket;
   var chartAcc;
+  var sensorId = getSensorId();
+  var pot;
 
-  function showGraph(chart) {
-    if (chart === 'acc') {
-      $('#chartarea_acc').slideDown();
-      document.getElementById('chart_acc').width = 300;
-      document.getElementById('chart_acc').height = 200;
-    }
+  function showAcc() {
+    $('#chartarea_acc').slideDown();
+    document.getElementById('chart_acc').width = 300;
+    document.getElementById('chart_acc').height = 200;
+  }
+
+  function showPotGauge() {
+    var g1;
+    g1 = new JustGage({
+      id: 'potentiometer',
+      value: 72,
+      min: 0,
+      max: 100,
+      gaugeWidthScale: 0.6,
+      counter: true,
+      hideInnerShadow: true
+    });
+    return g1;
   }
 
   function showMain() {
-    showGraph('acc');
+    showAcc();
+    showPotGauge();
   }
 
   function createTimeline() {
@@ -63,43 +78,36 @@ var WSN_CLIENT = (function() {
     setTimeout(isActiveAcc, 2000);
   }
 
-  function parseDocumentURL() {
-    // var url = document.getElementsByTagName('a')[0];
+  function getSensorId() {
     var url = document.URL;
     var urlComponents = url.split('=');
-    var i;
-    for (i = 0; i < urlComponents.length; i += 1) {
-      console.log(urlComponents[i]);
-    }
-    // console.log(
-    //   'Doc URL  :' + document.URL + '\n' +
-    //   'URL      :' + url.href + '\n' + // the full URL
-    //   'Protocol :' + url.protocol + '\n' + // http:
-    //   'Hostname :' + url.hostname + '\n' + // site.com
-    //   'Port     :' + url.port + '\n' + // 81
-    //   'Pathname :' + url.pathname + '\n' + // /path/page
-    //   'Search   :' + url.search + '\n' + // ?a=1&b=2
-    //   'Hash     :' + url.hash // #hash
-    // );
+
+    return urlComponents[1];
   }
 
   $(document).ready(function() {
     console.log('websocket.js running...');
-    parseDocumentURL();
-    showMain();
+    console.log('Sensor id : ' + sensorId + '\n');
+
+    showAcc();
     createTimeline();
+
+    pot = showPotGauge();
 
     websocket = new WebSocket('ws://localhost:9000/ws/sensors/rw');
 
     websocket.onopen = function() {
-      var skip = 0;
-      skip = skip + 1;
+      var data = JSON.stringify({
+        id: sensorId,
+        type: 'SUBSCRIBE'
+      });
+      websocket.send(data);
     };
 
     websocket.onmessage = function(evt) {
       var jsonSensor = jQuery.parseJSON(evt.data.toString());
       var theDate = new Date().getTime();
-      if (jsonSensor.id === 'SN01') {
+      if (jsonSensor.id === sensorId) {
         activityAcc = 1;
         $('#chart_acc').fadeTo(100, 1);
         dataAccX = jsonSensor.ax;
@@ -109,6 +117,8 @@ var WSN_CLIENT = (function() {
         accX.append(theDate, dataAccX);
         accY.append(theDate, dataAccY);
         accZ.append(theDate, dataAccZ);
+
+        pot.refresh(jsonSensor.pv);
       }
     };
 
@@ -123,7 +133,7 @@ var WSN_CLIENT = (function() {
   return {
     led1Command: function() {
       var data = JSON.stringify({
-        id: 'SN01',
+        id: sensorId,
         type: 'COMMAND',
         to: 'LED1_TOGGLE',
       });
@@ -132,7 +142,7 @@ var WSN_CLIENT = (function() {
 
     led2Command: function() {
       var data = JSON.stringify({
-        id: 'SN01',
+        id: sensorId,
         type: 'COMMAND',
         to: 'LED2_TOGGLE',
       });
@@ -141,7 +151,7 @@ var WSN_CLIENT = (function() {
 
     led3Command: function() {
       var data = JSON.stringify({
-        id: 'SN01',
+        id: sensorId,
         type: 'COMMAND',
         to: 'LED3_TOGGLE',
       });
@@ -150,7 +160,7 @@ var WSN_CLIENT = (function() {
 
     led4Command: function() {
       var data = JSON.stringify({
-        id: 'SN01',
+        id: sensorId,
         type: 'COMMAND',
         to: 'LED4_TOGGLE',
       });
@@ -159,20 +169,25 @@ var WSN_CLIENT = (function() {
 
     smoothCommand: function() {
       var data = JSON.stringify({
-        id: 'SN01',
+        id: sensorId,
         type: 'COMMAND',
         to: 'SMOOTH_TOGGLE',
       });
       websocket.send(data);
     },
 
-    testMessageCommand: function() {
+    displayMessageCommand: function(msg) {
       var data = JSON.stringify({
-        id: 'SN01',
+        id: sensorId,
         type: 'COMMAND',
         to: 'TEST_MESSAGE',
+        param: msg,
       });
       websocket.send(data);
+    },
+
+    mySensorId: function() {
+      return sensorId;
     },
   };
 }());
