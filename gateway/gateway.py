@@ -50,6 +50,10 @@ class WSProtocol(WebSocketClientProtocol):
           print('TEST_MESSAGE <' + netstring + '>')
           packet = xbeeMkPacketFromString(netstring, longAddr, shortAddr)
           self.sp.protocol.transport.write(packet)
+        elif data[u'to'] == u'SET_DISPLAY_BACKGROUND':
+          netstring = ('1:' + data[u'param'] + ',').encode('ascii')
+          packet = xbeeMkPacketFromString(netstring, longAddr, shortAddr)
+          self.sp.protocol.transport.write(packet)
         else:
           pass
         print(data)
@@ -142,9 +146,9 @@ class SNodeProtocol(Protocol):
 
 
 if __name__ == '__main__':
-  factory = WebSocketClientFactory("ws://localhost:9000/ws/sensors/rw",
+  factory = WebSocketClientFactory("ws://hesabu.net:9000/ws/sensors/rw",
                                    debug=False)
   factory.protocol = WSProtocol
   factory.sNodeProtocol = SNodeProtocol
-  reactor.connectTCP("localhost", 9000, factory)
+  reactor.connectTCP("hesabu.net", 9000, factory)
   reactor.run()

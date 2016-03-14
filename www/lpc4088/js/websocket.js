@@ -15,30 +15,49 @@ var WSN_CLIENT = (function() {
   var chartAcc;
   var sensorId = getSensorId();
   var pot;
+  var temp;
 
   function showAcc() {
-    $('#chartarea_acc').slideDown();
-    document.getElementById('chart_acc').width = 300;
-    document.getElementById('chart_acc').height = 200;
+    var acc = $('#chart_acc');
+    var ctx = acc.get(0).getContext('2d');
+    var container = $(acc).parent();
+
+    function resizeChart() {
+      acc.attr('width', $(container).width());
+      acc.attr('height', $(container).height());
+    }
+    // $(window).resize(resizeChart);
+    resizeChart();
   }
 
   function showPotGauge() {
-    var g1;
-    g1 = new JustGage({
+    var g;
+    g = new JustGage({
       id: 'potentiometer',
-      value: 72,
+      value: 0,
       min: 0,
       max: 100,
       gaugeWidthScale: 0.6,
       counter: true,
-      hideInnerShadow: true
+      hideInnerShadow: true,
+      relativeGaugeSize: true
     });
-    return g1;
+    return g;
   }
 
-  function showMain() {
-    showAcc();
-    showPotGauge();
+  function showTempGauge() {
+    var g;
+    g = new JustGage({
+      id: 'temperature',
+      value: 0,
+      min: -15,
+      max: 50,
+      gaugeWidthScale: 0.6,
+      counter: true,
+      hideInnerShadow: true,
+      relativeGaugeSize: true
+    });
+    return g;
   }
 
   function createTimeline() {
@@ -89,12 +108,17 @@ var WSN_CLIENT = (function() {
     console.log('websocket.js running...');
     console.log('Sensor id : ' + sensorId + '\n');
 
+    $("#messageForm").on('submit', function(event) {
+      event.preventDefault();
+    });
+
     showAcc();
     createTimeline();
 
     pot = showPotGauge();
+    temp = showTempGauge();
 
-    websocket = new WebSocket('ws://localhost:9000/ws/sensors/rw');
+    websocket = new WebSocket('ws://www.hesabu.net:9000/ws/sensors/rw');
 
     websocket.onopen = function() {
       var data = JSON.stringify({
@@ -118,7 +142,8 @@ var WSN_CLIENT = (function() {
         accY.append(theDate, dataAccY);
         accZ.append(theDate, dataAccZ);
 
-        pot.refresh(jsonSensor.pv);
+        pot.refresh(jsonSensor.pt);
+        temp.refresh(jsonSensor.tm);
       }
     };
 
@@ -176,12 +201,23 @@ var WSN_CLIENT = (function() {
       websocket.send(data);
     },
 
-    displayMessageCommand: function(msg) {
+    displayMessageCommand: function() {
+      var message = document.getElementById('message').value;
       var data = JSON.stringify({
         id: sensorId,
         type: 'COMMAND',
         to: 'TEST_MESSAGE',
-        param: msg,
+        param: message,
+      });
+      websocket.send(data);
+    },
+
+    setDisplayBackgroundCommand: function(colourStr) {
+      var data = JSON.stringify({
+        id: sensorId,
+        type: 'COMMAND',
+        to: 'SET_DISPLAY_BACKGROUND',
+        param: colourStr,
       });
       websocket.send(data);
     },
