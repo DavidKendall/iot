@@ -113,8 +113,8 @@ class SNodeProtocol(Protocol):
     elif self.state == GET_REST_OF_FRAME:
       if len(self.buffer) >= self.length:
         packet = self.buffer[:self.length]
-        # print("Packet: "),
-        # print(repr(packet))
+        print("Packet: "),
+        print(repr(packet))
         self.buffer = self.buffer[self.length:]
         # print("Buffer: "),
         # print(repr(self.buffer))
@@ -126,6 +126,8 @@ class SNodeProtocol(Protocol):
               sensorData = dict([s.split(':') for s in str(
                   packet[startAppData:self.length]).split(',')])
               sensorId = sensorData.get('id')
+              print("sensorData: ")
+              print(repr(sensorData))
               if sensorId != None:
                 msg = dumps(sensorData)
                 # print(msg)
@@ -133,7 +135,7 @@ class SNodeProtocol(Protocol):
                 if sensorId not in self.nodes:
                   self.nodes[sensorId] = {'longAddr': packet[
                       4:12], 'shortAddr': packet[12:14]}
-                #   print(repr(self.nodes))
+                  # print(repr(self.nodes))
             except ValueError:
               print("Dictionary error: " + repr(packet))
         else:

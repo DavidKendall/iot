@@ -6,7 +6,6 @@ import os
 import logging
 import datetime
 import json
-gateway = None
 topics = {}
 
 
@@ -20,7 +19,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
     logging.warning('New client connection')
 
   def on_message(self, message):
-    global gateway
     global topics
 
     data = json.loads(message.decode('utf8'))
@@ -28,36 +26,40 @@ class WSHandler(tornado.websocket.WebSocketHandler):
     topic = data[u'id']
     if messageType == u'SUBSCRIBE':
       if topic not in topics:
-        topics[topic] = {'subscribers': [self], 'last_published': None}
+        topics[topic] = {'subscribers': [self], 
+                         'publisher': None, 
+                         'last_published': None}
       else:
         topics[topic]['subscribers'].append(self)
       logging.warning('New subscriber to topic {}'.format(topic))
     elif messageType == u'DATA':
-      if not gateway:
-        gateway = self
-        logging.warning('New gateway')
       if topic not in topics:
         topics[topic] = {'subscribers': [],
+                         'publisher' : None,
                          'last_published': datetime.datetime.now()}
-        logging.warning('New publisher on topic {}'.format(topic))
+        logging.warning('New topic {}'.format(topic))
+      if not topics[topic]['publisher']:
+        topics[topic]['publisher'] = self
+        logging.warning('New publisher')
       else:
-        topics[topic]['lastact'] = datetime.datetime.now()
+        topics[topic]['last_published'] = datetime.datetime.now()
       for client in topics[topic]['subscribers']:
         try:
           client.write_message(message)
         except tornado.websocket.WebSocketClosedError:
           topics[topic]['subscribers'].remove(client)
     elif messageType == u'COMMAND':
-      if gateway:
-        gateway.write_message(message)
+      if topics[topic]['publisher']:
+        topics[topic]['publisher'].write_message(message)
     else:
       logging.warning('Unknown message type')
 
   def on_close(self):
-    global gateway
+    global topics
 
-    if self == gateway:
-      gateway = None
+    for topic in topics:
+      if self == topics[topic]['publisher']:
+        topics[topic]['publisher'] = None
     logging.warning('Client closing')
 
 settings = {'auto_reload': True}

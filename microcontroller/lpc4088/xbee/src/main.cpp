@@ -19,8 +19,8 @@
 *                                 NODE IDENTIFIER and DESCRIPTION
 *********************************************************************************************************
 */
-char const * const NODE_ID = "SN00";
-char const * const NODE_DESCRIPTION = "Revolutionary Headquarters";
+char const * const NODE_ID = "SN01";
+char const * const NODE_DESCRIPTION = "Corbyn House";
 
 /*
 *********************************************************************************************************
